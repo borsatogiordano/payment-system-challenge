@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { User, UserRole } from 'src/core/domain/entities/user.entity';
+import { User } from 'src/core/domain/entities/user.entity';
 import { UserRepository, CreateUserData } from 'src/core/application/repositories/user.repository';
 import { PrismaService } from 'src/infra/database/prisma.service';
+import { UserRole } from 'src/core/domain/enums/user-role-enum';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
@@ -13,17 +14,17 @@ export class PrismaUserRepository implements UserRepository {
       take: perPage,
     });
 
-    return usersFromDb.then(users => users.map(user => new User(
-      user.id,
-      user.name,
-      user.email,
-      user.password,
-      user.document,
-      user.phone,
-      user.role as UserRole,
-      user.createdAt,
-      user.updatedAt,
-    )));
+    return usersFromDb.then(users => users.map(user => new User({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      document: user.document,
+      phone: user.phone,
+      role: user.role as UserRole,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    })));
   }
 
   count(): Promise<number> {
@@ -36,17 +37,17 @@ export class PrismaUserRepository implements UserRepository {
       data: userData,
     });
 
-    return new User(
-      createdUser.id,
-      createdUser.name,
-      createdUser.email,
-      createdUser.password,
-      createdUser.document,
-      createdUser.phone,
-      createdUser.role as UserRole,
-      createdUser.createdAt,
-      createdUser.updatedAt,
-    );
+    return new User({
+      id: createdUser.id,
+      name: createdUser.name,
+      email: createdUser.email,
+      password: createdUser.password,
+      document: createdUser.document,
+      phone: createdUser.phone,
+      role: createdUser.role as UserRole,
+      createdAt: createdUser.createdAt,
+      updatedAt: createdUser.updatedAt,
+    });
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -56,17 +57,17 @@ export class PrismaUserRepository implements UserRepository {
 
     if (!user) return null;
 
-    return new User(
-      user.id,
-      user.name,
-      user.email,
-      user.password,
-      user.document,
-      user.phone,
-      user.role as UserRole,
-      user.createdAt,
-      user.updatedAt,
-    );
+    return new User({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      document: user.document,
+      phone: user.phone,
+      role: user.role as UserRole,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
   }
 
   async findByDocument(document: string): Promise<User | null> {
@@ -76,17 +77,17 @@ export class PrismaUserRepository implements UserRepository {
 
     if (!user) return null;
 
-    return new User(
-      user.id,
-      user.name,
-      user.email,
-      user.password,
-      user.document,
-      user.phone,
-      user.role as UserRole,
-      user.createdAt,
-      user.updatedAt,
-    );
+    return new User({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      document: user.document,
+      phone: user.phone,
+      role: user.role as UserRole,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
   }
 
   async findById(id: string): Promise<User | null> {
@@ -96,17 +97,17 @@ export class PrismaUserRepository implements UserRepository {
 
     if (!user) return null;
 
-    return new User(
-      user.id,
-      user.name,
-      user.email,
-      user.password,
-      user.document,
-      user.phone,
-      user.role as UserRole,
-      user.createdAt,
-      user.updatedAt,
-    );
+    return new User({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      document: user.document,
+      phone: user.phone,
+      role: user.role as UserRole,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    });
   }
 
   async update(id: string, userData: Partial<CreateUserData>): Promise<User> {
@@ -115,17 +116,17 @@ export class PrismaUserRepository implements UserRepository {
       data: userData,
     });
 
-    return new User(
-      updatedUser.id,
-      updatedUser.name,
-      updatedUser.email,
-      updatedUser.password,
-      updatedUser.document,
-      updatedUser.phone,
-      updatedUser.role as UserRole,
-      updatedUser.createdAt,
-      updatedUser.updatedAt,
-    );
+    return new User({
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      password: updatedUser.password,
+      document: updatedUser.document,
+      phone: updatedUser.phone,
+      role: updatedUser.role as UserRole,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+    });
   }
 
   async delete(id: string): Promise<void> {

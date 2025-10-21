@@ -13,6 +13,7 @@ model User {
   phone     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  charges   Charge[]
 
   @@map("users")
 }

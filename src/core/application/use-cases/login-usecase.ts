@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UserRepository } from '../repositories/user.repository';
 import { LoginDto } from '../dtos/login.dto';
-import { AuthResponseDto } from '../dtos/auth-response.dto';
 
 @Injectable()
 export class LoginUseCase {
@@ -12,7 +11,7 @@ export class LoginUseCase {
     private readonly jwtService: JwtService,
   ) { }
 
-  async execute(loginDto: LoginDto): Promise<AuthResponseDto> {
+  async execute(loginDto: LoginDto): Promise<{ access_token: string }> {
 
     const user = await this.userRepository.findByEmail(loginDto.email);
     if (!user) {
@@ -34,12 +33,6 @@ export class LoginUseCase {
 
     return {
       access_token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
     };
   }
 }

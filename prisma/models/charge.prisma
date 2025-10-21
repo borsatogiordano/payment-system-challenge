@@ -1,0 +1,40 @@
+model Charge {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("BRL")
+  method   PaymentMethod
+  status   ChargeStatus  @default(PENDING)
+
+  pixKey String?
+
+  // Dados específicos cc
+  cardNumber     String?
+  cardHolderName String?
+  installments   Int?
+
+  // Dados específicos boleto
+  dueDate DateTime?
+  paidAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("charges")
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  BANK_SLIP
+}
+
+enum ChargeStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+}

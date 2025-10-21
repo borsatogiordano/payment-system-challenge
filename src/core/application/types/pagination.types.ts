@@ -1,5 +1,3 @@
-// 📋 Tipos para paginação e metadata
-
 export interface PaginationParams {
   page: number;
   perPage: number;

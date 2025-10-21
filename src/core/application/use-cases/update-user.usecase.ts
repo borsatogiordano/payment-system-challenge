@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { UserRole } from 'src/core/domain/entities/user.entity';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UserRepository } from '../repositories/user.repository';
+import { UserRole } from 'src/core/domain/enums/user-role-enum';
 
 export interface UpdateUserContext {
   requesterId: string;
@@ -16,8 +16,8 @@ export class UpdateUserUseCase {
   ) { }
 
   async execute(
-    userId: string, 
-    updateData: UpdateUserDto, 
+    userId: string,
+    updateData: UpdateUserDto,
     context: UpdateUserContext
   ) {
 
@@ -38,8 +38,8 @@ export class UpdateUserUseCase {
   }
 
   private async validateUpdatePermissions(
-    targetUserId: string, 
-    updateData: UpdateUserDto, 
+    targetUserId: string,
+    updateData: UpdateUserDto,
     context: UpdateUserContext
   ): Promise<void> {
     const isOwner = context.requesterId === targetUserId;

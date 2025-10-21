@@ -1,6 +1,16 @@
 import { User } from "src/core/domain/entities/user.entity";
+import { UserRole } from "src/core/domain/enums/user-role-enum";
 
-export type CreateUserData = Omit<User, 'id' | 'createdAt' | 'updatedAt' | 'toPublic'>;
+export type CreateUserData = {
+  name: string;
+  email: string;
+  password: string;
+  document: string;
+  phone: string;
+  role: UserRole;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
 
 export abstract class UserRepository {
   abstract create(userData: CreateUserData): Promise<User>;

@@ -1,7 +1,7 @@
 import { Controller, Delete, Param, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { DeleteUserUseCase } from "src/core/application/use-cases/delete-user.usecase";
-import { UserRole } from "src/core/domain/entities/user.entity";
+import { UserRole } from "src/core/domain/enums/user-role-enum";
 import { Roles } from "src/infra/auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "src/infra/auth/guards/jwt-auth.guard";
 import { RolesGuard } from "src/infra/auth/guards/roles.guard";

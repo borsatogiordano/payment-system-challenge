@@ -1,8 +1,8 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { UserRole } from "src/core/domain/entities/user.entity";
 import { CreateUserDto } from "../dtos/create-user.dto";
 import { UserRepository, CreateUserData } from "../repositories/user.repository";
+import { UserRole } from 'src/core/domain/enums/user-role-enum';
 
 @Injectable()
 export class CreateUserUseCase {
@@ -21,7 +21,6 @@ export class CreateUserUseCase {
     if (existingUserByDocument) {
       throw new ConflictException(`Usuário com documento '${userData.document}' já existe`);
     }
-
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 

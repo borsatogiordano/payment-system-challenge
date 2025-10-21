@@ -7,7 +7,7 @@ import { AuthResponseDto } from 'src/core/application/dtos/auth-response.dto';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly loginUseCase: LoginUseCase) {}
+  constructor(private readonly loginUseCase: LoginUseCase) { }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -21,7 +21,7 @@ export class AuthController {
     status: 401,
     description: 'Credenciais inválidas',
   })
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+  async login(@Body() loginDto: LoginDto): Promise<{ access_token: string }> {
     return this.loginUseCase.execute(loginDto);
   }
 }
