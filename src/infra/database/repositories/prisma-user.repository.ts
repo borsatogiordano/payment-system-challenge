@@ -6,6 +6,9 @@ import { UserRole } from 'src/core/domain/enums/user-role-enum';
 
 @Injectable()
 export class PrismaUserRepository implements UserRepository {
+
+  //TODO: Implement mappers to convert between Prisma models and Domain entities
+
   constructor(private readonly prisma: PrismaService) { }
 
   findMany(page: number, perPage: number): Promise<User[]> {

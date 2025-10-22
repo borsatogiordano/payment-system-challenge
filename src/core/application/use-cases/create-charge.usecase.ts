@@ -18,9 +18,7 @@ export class CreateChargeUseCase {
 
   async execute(data: CreateChargeDto, idempotencyKey: string) {
 
-    const idempotencyHash = idempotencyKey && idempotencyKey.trim().length > 0
-      ? idempotencyKey.trim()
-      : this.generateIdempotencyHash(data);
+    const idempotencyHash = idempotencyKey
 
     const existingRecord = await this.idempotencyKeyRepo.findByHash(idempotencyHash);
     if (existingRecord) {
@@ -36,13 +34,13 @@ export class CreateChargeUseCase {
 
         switch (data.method) {
           case PaymentMethod.PIX:
-            if (this.normalizePixKey(existingRecord.charge.pixKey || '') !== this.normalizePixKey(data.pixKey || '')) {
+            if (Charge.normalizePixKey(existingRecord.charge.pixKey || '') !== Charge.normalizePixKey(data.pixKey || '')) {
               conflictFields.push('pixKey');
             }
             break;
 
           case PaymentMethod.CREDIT_CARD:
-            if (this.normalizeCardNumber(existingRecord.charge.cardNumber || '') !== this.normalizeCardNumber(data.cardNumber || '')) {
+            if (Charge.normalizeCardNumber(existingRecord.charge.cardNumber || '') !== Charge.normalizeCardNumber(data.cardNumber || '')) {
               conflictFields.push('cardNumber');
             }
             if ((existingRecord.charge.cardHolderName || '').trim().toUpperCase() !== (data.cardHolderName || '').trim().toUpperCase()) {
@@ -63,11 +61,10 @@ export class CreateChargeUseCase {
         }
 
         if (conflictFields.length > 0) {
-          throw new BadRequestException(`Conflito de idempotência: campos diferentes detectados - ${conflictFields.join(', ')}`);
+          throw new BadRequestException(`Conflito de idempotência: campos diferentes detectados - ${conflictFields.join(', ')}, por favor, utilize uma chave de idempotência diferente para criar uma nova cobrança.`);
         }
 
-        // Retornar cobrança existente
-        const existingCharge = this.sanitizeChargeData(existingRecord.charge);
+        const existingCharge = existingRecord.charge.toPublic();
         return existingCharge;
       }
       throw new BadRequestException(
@@ -88,7 +85,7 @@ export class CreateChargeUseCase {
     const charge = this.createChargeByMethod(data);
     const createdCharge = await this.chargeRepo.create(charge);
 
-    const response = this.sanitizeChargeData(createdCharge);
+    const response = createdCharge.toPublic();
 
     await this.idempotencyKeyRepo.create(idempotencyHash, createdCharge.id);
 
@@ -162,94 +159,4 @@ export class CreateChargeUseCase {
     return errors;
   }
 
-  private sanitizeChargeData(charge: Charge) {
-    const publicData = {
-      id: charge.id,
-      customerId: charge.customerId,
-      amount: charge.amount,
-      currency: charge.currency,
-      method: charge.method,
-      status: charge.status,
-      createdAt: charge.createdAt,
-      updatedAt: charge.updatedAt,
-    };
-
-    switch (charge.method) {
-      case PaymentMethod.PIX:
-        return { ...publicData, pixKey: charge.pixKey };
-
-      case PaymentMethod.CREDIT_CARD:
-        return {
-          ...publicData,
-          cardNumber: this.maskCardNumber(charge.cardNumber!),
-          cardHolderName: charge.cardHolderName,
-          installments: charge.installments,
-        };
-
-      case PaymentMethod.BANK_SLIP:
-        return { ...publicData, dueDate: charge.dueDate };
-
-      default:
-        return publicData;
-    }
-  }
-
-  private maskCardNumber(cardNumber: string): string {
-    if (cardNumber.length < 4) return '****';
-    return '**** **** **** ' + cardNumber.slice(-4);
-  }
-
-  private generateIdempotencyHash(data: CreateChargeDto): string {
-
-    const baseData = {
-      userId: data.userId.trim(),
-      amount: Math.round(data.amount * 100).toString(),
-      currency: (data.currency || 'BRL').toUpperCase(),
-      method: data.method,
-      ...(data.description && { description: data.description.trim() })
-    };
-
-    let methodSpecificData = {};
-
-    switch (data.method) {
-      case PaymentMethod.PIX:
-        methodSpecificData = {
-          pixKey: this.normalizePixKey(data.pixKey!)
-        };
-        break;
-
-      case PaymentMethod.CREDIT_CARD:
-        methodSpecificData = {
-          cardNumber: this.normalizeCardNumber(data.cardNumber!),
-          cardHolderName: data.cardHolderName!.trim().toUpperCase(),
-          installments: data.installments!
-        };
-        break;
-
-      case PaymentMethod.BANK_SLIP:
-        methodSpecificData = {
-          dueDate: new Date(data.dueDate!).toISOString().split('T')[0]
-        };
-        break;
-    }
-
-
-    const allData = { ...baseData, ...methodSpecificData };
-
-    const sortedKeys = Object.keys(allData).sort();
-
-    const keyValuePairs = sortedKeys.map(key => `${key}=${allData[key]}`);
-    const hashableString = keyValuePairs.join('|');
-
-    const hash = createHash('sha256').update(hashableString, 'utf8').digest('hex');
-
-    return hash;
-  }
-
-  private normalizePixKey(pixKey: string): string {
-    return pixKey.trim().toLowerCase();
-  }
-  private normalizeCardNumber(cardNumber: string): string {
-    return cardNumber.replace(/\D/g, '');
-  }
 }

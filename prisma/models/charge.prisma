@@ -8,6 +8,7 @@ model Charge {
   method   PaymentMethod
   status   ChargeStatus  @default(PENDING)
 
+  // Dados específicos pix
   pixKey String?
 
   // Dados específicos cc
@@ -16,14 +17,15 @@ model Charge {
   installments   Int?
 
   // Dados específicos boleto
-  dueDate DateTime?
-  paidAt  DateTime?
+  boletoBarCode String?   @default(cuid())
+  dueDate       DateTime?
+  paidAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   idempotencyKey   IdempotencyKey?
-  idempotencyKeyId String? @unique
+  idempotencyKeyId String?         @unique
 
   @@map("charges")
 }

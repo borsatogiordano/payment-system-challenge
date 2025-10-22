@@ -6,4 +6,5 @@ export abstract class ChargeRepository {
   abstract delete(id: string): Promise<void>;
   abstract findMany(page: number, perPage: number): Promise<Charge[]>;
   abstract count(): Promise<number>;
+  abstract update(charge: Charge): Promise<Charge>;
 }

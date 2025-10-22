@@ -1,6 +1,6 @@
 model IdempotencyKey {
   hash      String   @id @unique
-  charge    Charge?  @relation(fields: [chargeId], references: [id])
+  charge    Charge?  @relation(fields: [chargeId], references: [id], onDelete: Cascade)
   chargeId  String?  @unique
   expiresAt DateTime
 

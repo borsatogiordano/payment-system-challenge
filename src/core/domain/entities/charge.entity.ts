@@ -12,6 +12,7 @@ export class Charge {
   private _cardNumber?: string;
   private _cardHolderName?: string;
   private _installments?: number;
+  private _boletoBarCode?: string;
   private _dueDate?: Date;
   private _createdAt: Date;
   private _updatedAt: Date;
@@ -27,6 +28,7 @@ export class Charge {
     cardNumber?: string;
     cardHolderName?: string;
     installments?: number;
+    boletoBarCode?: string;
     dueDate?: Date;
     createdAt?: Date;
     updatedAt?: Date;
@@ -41,13 +43,14 @@ export class Charge {
     this._cardNumber = props.cardNumber;
     this._cardHolderName = props.cardHolderName;
     this._installments = props.installments;
+    this._boletoBarCode = props.boletoBarCode;
     this._dueDate = props.dueDate;
     this._createdAt = props.createdAt || new Date();
     this._updatedAt = props.updatedAt || new Date();
   }
 
   get id() { return this._id; }
-  get customerId() { return this._userId; }
+  get userId() { return this._userId; }
   get amount() { return this._amount; }
   get currency() { return this._currency; }
   get method() { return this._method; }
@@ -56,6 +59,7 @@ export class Charge {
   get cardNumber() { return this._cardNumber; }
   get cardHolderName() { return this._cardHolderName; }
   get installments() { return this._installments; }
+  get boletoBarCode() { return this._boletoBarCode; }
   get dueDate() { return this._dueDate; }
   get createdAt() { return this._createdAt; }
   get updatedAt() { return this._updatedAt; }
@@ -122,13 +126,13 @@ export class Charge {
   }
 
   static createPixCharge(props: {
-    customerId: string;
+    userId: string;
     amount: number;
     pixKey: string;
     currency?: string;
-  }): Partial<Charge> & Pick<Charge, 'customerId' | 'amount' | 'currency' | 'method' | 'status' | 'pixKey'> {
+  }): Partial<Charge> & Pick<Charge, 'userId' | 'amount' | 'currency' | 'method' | 'status' | 'pixKey'> {
     return {
-      customerId: props.customerId,
+      userId: props.userId,
       amount: props.amount,
       currency: props.currency || 'BRL',
       method: PaymentMethod.PIX,
@@ -138,15 +142,15 @@ export class Charge {
   }
 
   static createCreditCardCharge(props: {
-    customerId: string;
+    userId: string;
     amount: number;
     cardNumber: string;
     cardHolderName: string;
     installments: number;
     currency?: string;
-  }): Partial<Charge> & Pick<Charge, 'customerId' | 'amount' | 'currency' | 'method' | 'status' | 'cardNumber' | 'cardHolderName' | 'installments'> {
+  }): Partial<Charge> & Pick<Charge, 'userId' | 'amount' | 'currency' | 'method' | 'status' | 'cardNumber' | 'cardHolderName' | 'installments'> {
     return {
-      customerId: props.customerId,
+      userId: props.userId,
       amount: props.amount,
       currency: props.currency || 'BRL',
       method: PaymentMethod.CREDIT_CARD,
@@ -158,18 +162,68 @@ export class Charge {
   }
 
   static createBankSlipCharge(props: {
-    customerId: string;
+    userId: string;
     amount: number;
     dueDate: Date;
     currency?: string;
-  }): Partial<Charge> & Pick<Charge, 'customerId' | 'amount' | 'currency' | 'method' | 'status' | 'dueDate'> {
+  }): Partial<Charge> & Pick<Charge, 'userId' | 'amount' | 'currency' | 'method' | 'status' | 'dueDate'> {
     return {
-      customerId: props.customerId,
+      userId: props.userId,
       amount: props.amount,
       currency: props.currency || 'BRL',
       method: PaymentMethod.BANK_SLIP,
       status: ChargeStatus.PENDING,
       dueDate: props.dueDate,
     };
+  }
+
+  toPublic() {
+    const base = {
+      id: this._id,
+      userId: this._userId,
+      amount: this._amount,
+      currency: this._currency,
+      method: this._method,
+      status: this._status,
+      createdAt: this._createdAt,
+      updatedAt: this._updatedAt,
+    };
+
+    switch (this._method) {
+      case PaymentMethod.PIX:
+        return { ...base, pixKey: this._pixKey };
+
+      case PaymentMethod.CREDIT_CARD:
+        return {
+          ...base,
+          cardNumber: Charge.maskCardNumber(this._cardNumber || ''),
+          cardHolderName: this._cardHolderName,
+          installments: this._installments,
+        };
+
+      case PaymentMethod.BANK_SLIP:
+        return {
+          ...base,
+          dueDate: this._dueDate
+          ,
+          boletoBarCode: this._boletoBarCode,
+        };
+
+      default:
+        return base;
+    }
+  }
+
+  static maskCardNumber(cardNumber: string): string {
+    if (!cardNumber) return '****';
+    if (cardNumber.length < 4) return '****';
+    return '**** **** **** ' + cardNumber.slice(-4);
+  }
+
+  static normalizePixKey(pixKey: string): string {
+    return pixKey.trim().toLowerCase();
+  }
+  static normalizeCardNumber(cardNumber: string): string {
+    return cardNumber.replace(/\D/g, '');
   }
 }

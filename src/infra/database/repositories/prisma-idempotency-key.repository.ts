@@ -8,6 +8,8 @@ import { ChargeStatus } from "src/core/domain/enums/charge-status.enum";
 @Injectable()
 export class PrismaIdempotencyKeyRepository implements IdempotencyKeyRepository {
 
+    //TODO: Implement mappers to convert between Prisma models and Domain entities
+
   constructor(
     private readonly prisma: PrismaService
   ) { }
@@ -33,6 +35,7 @@ export class PrismaIdempotencyKeyRepository implements IdempotencyKeyRepository 
       cardHolderName: c.cardHolderName || undefined,
       installments: c.installments || undefined,
       dueDate: c.dueDate || undefined,
+      boletoBarCode: c.boletoBarCode || undefined,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     });
@@ -70,6 +73,7 @@ export class PrismaIdempotencyKeyRepository implements IdempotencyKeyRepository 
       cardHolderName: existingCharge.charge?.cardHolderName || undefined,
       installments: existingCharge.charge?.installments || undefined,
       dueDate: existingCharge.charge?.dueDate || undefined,
+      boletoBarCode: existingCharge.charge?.boletoBarCode || undefined,
       createdAt: existingCharge.charge?.createdAt!,
       updatedAt: existingCharge.charge?.updatedAt!,
     });

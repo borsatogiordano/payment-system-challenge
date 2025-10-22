@@ -14,22 +14,18 @@ export class RolesGuard implements CanActivate {
     ]);
 
     if (!requiredRoles) {
-      return true; // Sem roles definidas = acesso liberado
+      return true;
     }
 
     const { user } = context.switchToHttp().getRequest();
     
-    // 🔒 Verificar se o usuário existe (JWT deve ter sido validado antes)
     if (!user) {
-      console.log('❌ RolesGuard: Usuário não encontrado na requisição');
       return false;
     }
 
-    // 🔍 Verificar se o usuário tem uma das roles necessárias
     const hasRequiredRole = requiredRoles.some((role) => user.role === role);
     
     if (!hasRequiredRole) {
-      console.log(`❌ RolesGuard: Usuário ${user.email} não tem role necessária. Requerida: [${requiredRoles}], Atual: ${user.role}`);
     }
     
     return hasRequiredRole;
