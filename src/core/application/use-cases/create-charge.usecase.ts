@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { Charge } from "src/core/domain/entities/charge.entity";
 import { PaymentMethod } from "src/core/domain/enums/payment-method-enum";
 import { ChargeStatus } from "src/core/domain/enums/charge-status.enum";
@@ -16,14 +16,63 @@ export class CreateChargeUseCase {
     private readonly idempotencyKeyRepo: IdempotencyKeyRepository,
   ) { }
 
-  async execute(data: CreateChargeDto) {
+  async execute(data: CreateChargeDto, idempotencyKey: string) {
 
-    const idempotencyHash = this.generateIdempotencyHash(data);
+    const idempotencyHash = idempotencyKey && idempotencyKey.trim().length > 0
+      ? idempotencyKey.trim()
+      : this.generateIdempotencyHash(data);
 
-    const existingTransaction = await this.idempotencyKeyRepo.findByHash(idempotencyHash);
-    if (existingTransaction) {
-      console.log(`⚠️ Requisição duplicada detectada! Retornando cobrança já criada.`);
-      return existingTransaction.response;
+    const existingRecord = await this.idempotencyKeyRepo.findByHash(idempotencyHash);
+    if (existingRecord) {
+      const now = new Date();
+      const expiresAt = new Date(existingRecord.expiresAt);
+
+      if (expiresAt > now) {
+        const conflictFields: string[] = [];
+
+        if (existingRecord.charge.amount !== data.amount) conflictFields.push('amount');
+        if ((existingRecord.charge.currency || 'BRL') !== (data.currency || 'BRL')) conflictFields.push('currency');
+        if (existingRecord.charge.method !== data.method) conflictFields.push('method');
+
+        switch (data.method) {
+          case PaymentMethod.PIX:
+            if (this.normalizePixKey(existingRecord.charge.pixKey || '') !== this.normalizePixKey(data.pixKey || '')) {
+              conflictFields.push('pixKey');
+            }
+            break;
+
+          case PaymentMethod.CREDIT_CARD:
+            if (this.normalizeCardNumber(existingRecord.charge.cardNumber || '') !== this.normalizeCardNumber(data.cardNumber || '')) {
+              conflictFields.push('cardNumber');
+            }
+            if ((existingRecord.charge.cardHolderName || '').trim().toUpperCase() !== (data.cardHolderName || '').trim().toUpperCase()) {
+              conflictFields.push('cardHolderName');
+            }
+            if ((existingRecord.charge.installments || 1) !== (data.installments || 1)) {
+              conflictFields.push('installments');
+            }
+            break;
+
+          case PaymentMethod.BANK_SLIP:
+            const existingDue = existingRecord.charge.dueDate ? new Date(existingRecord.charge.dueDate).toISOString().split('T')[0] : '';
+            const incomingDue = data.dueDate ? new Date(data.dueDate).toISOString().split('T')[0] : '';
+            if (existingDue !== incomingDue) {
+              conflictFields.push('dueDate');
+            }
+            break;
+        }
+
+        if (conflictFields.length > 0) {
+          throw new BadRequestException(`Conflito de idempotência: campos diferentes detectados - ${conflictFields.join(', ')}`);
+        }
+
+        // Retornar cobrança existente
+        const existingCharge = this.sanitizeChargeData(existingRecord.charge);
+        return existingCharge;
+      }
+      throw new BadRequestException(
+        'A chave de idempotência fornecida expirou. Por favor, utilize uma chave de idempotência diferente para criar uma nova cobrança.'
+      );
     }
 
     const user = await this.userRepo.findById(data.userId);
@@ -41,7 +90,7 @@ export class CreateChargeUseCase {
 
     const response = this.sanitizeChargeData(createdCharge);
 
-    await this.idempotencyKeyRepo.create(idempotencyHash, JSON.parse(JSON.stringify(response)));
+    await this.idempotencyKeyRepo.create(idempotencyHash, createdCharge.id);
 
     return response;
   }

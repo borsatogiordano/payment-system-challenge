@@ -1,7 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { IdempotencyKeyRepository } from "src/core/application/repositories/idempotencyKey.repository";
+import { IdempotencyKeyRepository, IdempotencyRecord } from "src/core/application/repositories/idempotencyKey.repository";
 import { PrismaService } from "../prisma.service";
-import { IdempotencyKey } from "@prisma/client";
+import { Charge } from "src/core/domain/entities/charge.entity";
+import { PaymentMethod } from "src/core/domain/enums/payment-method-enum";
+import { ChargeStatus } from "src/core/domain/enums/charge-status.enum";
 
 @Injectable()
 export class PrismaIdempotencyKeyRepository implements IdempotencyKeyRepository {
@@ -10,18 +12,66 @@ export class PrismaIdempotencyKeyRepository implements IdempotencyKeyRepository 
     private readonly prisma: PrismaService
   ) { }
 
-  findByHash(hash: string): Promise<IdempotencyKey | null> {
-    return this.prisma.idempotencyKey.findUnique({
+  async findByHash(hash: string): Promise<IdempotencyRecord | null> {
+    const idempotency = await this.prisma.idempotencyKey.findUnique({
       where: { hash },
+      include: { charge: true },
     });
+
+    if (!idempotency || !idempotency.charge) return null;
+
+    const c = idempotency.charge;
+    const chargeEntity = new Charge({
+      id: c.id,
+      userId: c.userId,
+      amount: c.amount.toNumber(),
+      currency: c.currency,
+      method: c.method as PaymentMethod,
+      status: c.status as ChargeStatus,
+      pixKey: c.pixKey || undefined,
+      cardNumber: c.cardNumber || undefined,
+      cardHolderName: c.cardHolderName || undefined,
+      installments: c.installments || undefined,
+      dueDate: c.dueDate || undefined,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    });
+
+    return { charge: chargeEntity, expiresAt: idempotency.expiresAt };
   }
-  create(hash: string, response: any): Promise<IdempotencyKey> {
-    return this.prisma.idempotencyKey.create({
+
+  async create(hash: string, chargeId: string): Promise<Charge> {
+
+    if (!chargeId) throw new Error('Idempotency.create: response must include charge id');
+
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+    const existingCharge = await this.prisma.idempotencyKey.create({
       data: {
         hash,
-        response,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        chargeId,
+        expiresAt,
       },
+      select: { charge: true }
+    });
+
+    if (!existingCharge) throw new Error('Idempotency.create: linked charge not found');
+
+    return new Charge({
+      id: existingCharge.charge?.id!,
+      userId: existingCharge.charge?.userId!,
+      amount: existingCharge.charge?.amount.toNumber()!,
+      currency: existingCharge.charge?.currency!,
+      method: existingCharge.charge?.method as PaymentMethod,
+      status: existingCharge.charge?.status as ChargeStatus,
+      pixKey: existingCharge.charge?.pixKey || undefined,
+      cardNumber: existingCharge.charge?.cardNumber || undefined,
+      cardHolderName: existingCharge.charge?.cardHolderName || undefined,
+      installments: existingCharge.charge?.installments || undefined,
+      dueDate: existingCharge.charge?.dueDate || undefined,
+      createdAt: existingCharge.charge?.createdAt!,
+      updatedAt: existingCharge.charge?.updatedAt!,
     });
   }
 }

@@ -1,7 +1,7 @@
 model IdempotencyKey {
   hash      String   @id @unique
-  response  Json
-  createdAt DateTime @default(now())
+  charge    Charge?  @relation(fields: [chargeId], references: [id])
+  chargeId  String?  @unique
   expiresAt DateTime
 
   @@map("idempotency_keys")

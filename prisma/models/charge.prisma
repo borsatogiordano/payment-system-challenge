@@ -22,6 +22,9 @@ model Charge {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  idempotencyKey   IdempotencyKey?
+  idempotencyKeyId String? @unique
+
   @@map("charges")
 }
 
